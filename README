@@ -1,0 +1,8 @@
+
+test.rb
+  self-contained running demo, loads (hard-coded) file and finds optimal threshold
+
+variogram.rb
+  nicely-written and -documented library-type file which I haven't gotten around
+  to requiring in test.rb yet
+

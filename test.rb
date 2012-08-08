@@ -4,6 +4,8 @@ $height = 426
 
 def loadfile
 	raw_bytes = File.open($filename,'r'){|f|f.read}
+	raw_bytes = raw_bytes.unpack('C*')
+print "... "
 	pixels = Array.new($height){|i| Array.new($width, 0) }
 	i = 0
 	$height.times do |y|
@@ -59,9 +61,14 @@ def gamma(pixels, lag=1)
 	(sum1 + sum2) / 2
 end
 
+print "LOADING #{$filename} "
 pixels = loadfile
+puts "LOADED"
 #p pixels
 
+got_some = false
+bv = nil
+bl = nil
 v = Array.new(254)
 254.times do |l|
 	puts "CALCULATING VARIANCES FOR THRESHOLD #{l}"
@@ -80,12 +87,23 @@ v = Array.new(254)
 		g2 = gamma b
 		puts "   .. got g2"
 
-		v[l] = n1 * g1 + n2 * g2
-		puts ".. calculated variance #{n1}*#{g1} + #{n2}*#{g2} = #{v[l]} in #{Time.now.to_f - t}"
+		vv = n1 * g1 + n2 * g2
+		puts ".. calculated variance #{n1}*#{g1} + #{n2}*#{g2} = #{vv} in #{Time.now.to_f - t}"
+
+		v[l] = vv
+		if bv.nil? or bv > vv
+			bv = vv
+			bl = l
+		end
+
+		got_some = true
 	else
 		puts ".. skipped; empty segments"
+		break if got_some
 	end
 end
 
 p v
+
+puts "Best: #{bl} [#{bv}]"
 
