@@ -1,15 +1,30 @@
-$filename = 'images/chopper-640x426x8.raw'
-$width  = 640
-$height = 426
+require './variogram.rb'
 
-def loadfile
-	raw_bytes = File.open($filename,'r'){|f|f.read}
+FILENAME = 'images/chopper-640x426x8.raw'
+WIDTH  = 640
+HEIGHT = 426
+
+if TRUE #=verbose
+	def blab *args
+		Thread.new {
+			puts *args
+		}
+	end
+else
+	def blab *args
+	end
+end
+
+CSV = 'out.csv'
+csv = File.new(CSV, 'w')
+
+def load_raw_file filename, width, height
+	raw_bytes = File.open(filename,'r'){|f|f.read}
 	raw_bytes = raw_bytes.unpack('C*')
-print "... "
-	pixels = Array.new($height){|i| Array.new($width, 0) }
+	pixels = Array.new(height){|i| Array.new(width, 0) }
 	i = 0
-	$height.times do |y|
-		$width.times do |x|
+	height.times do |y|
+		width.times do |x|
 			pixels[y][x] = raw_bytes[i]
 			i += 1
 		end
@@ -18,92 +33,65 @@ print "... "
 	pixels
 end
 
-def threshold pixels, level
-	above = Array.new($height){|i| Array.new($width, nil) }
-	below = Array.new($height){|i| Array.new($width, nil) }
-	$height.times do |y|
-		$width.times do |x|
-			if pixels[y][x] >= level
-				above[y][x] = pixels[y][x]
-			else
-				below[y][x] = pixels[y][x]
-			end
-		end
-	end
-	[above, below]
-end
-
-def gamma(pixels, lag=1)
-	factor = $width * $height
-
-	sum1 = 0.0
-	($width-lag).times do |x|
-		$height.times do |y|
-			if pixels[y][x+lag] and pixels[y][x]
-				d = pixels[y][x+lag] - pixels[y][x]
-				sum1 += (d ** 2)
-			end
-		end
-	end
-	sum1 /= factor
-
-	sum2 = 0.0
-	$width.times do |x|
-		($height-lag).times do |y|
-			if pixels[y+lag][x] and pixels[y][x]
-				d = pixels[y+lag][x] - pixels[y][x]
-				sum1 += (d ** 2)
-			end
-		end
-	end
-	sum2 /= factor
-
-	(sum1 + sum2) / 2
-end
-
-print "LOADING #{$filename} "
-pixels = loadfile
-puts "LOADED"
+#print "LOADING #{FILENAME} "
+pixels = load_raw_file FILENAME, WIDTH, HEIGHT
+#blab "LOADED"
 #p pixels
 
+csv.print 'Lag (h),',255.times.to_a.join(','),",Best Level,Best Variance,Time\n"
+
+(1..3).each do |lag|
+	t0 = Time.now.to_f
+	blab "LAG #{lag}: starting"
+	got_some = false
+	bv = nil
+	bl = nil
+	v = Array.new(255)
+	254.times do |level|
+		t = Time.now.to_f
+		vv = variance pixels, WIDTH, HEIGHT, level, lag
+		if vv.nil?
+			blab "  THRESHOLD #{level}: empty segments"
+			break if got_some
+		else
+			blab "  THRESHOLD #{level}: #{vv} in #{'%0.3f' % ((Time.now.to_f - t)*1000)}ms"
+			v[level] = vv
+			if bv.nil? or bv > vv
+				bv = vv
+				bl = level
+			end
+			got_some = true
+		end
+	end
+	td = Time.now.to_f - t0
+	blab "LAG #{lag}: done in #{'%0.3f' % td}s"
+	csv.print "#{lag},", v.map{|x|x ? x : 0}.join(','),",#{bl},#{bv},#{td}\n"
+end
+# mean variance...
+t0 = Time.now.to_f
+blab "LAG (1,2,3): starting"
 got_some = false
 bv = nil
 bl = nil
-v = Array.new(254)
-254.times do |l|
-	puts "CALCULATING VARIANCES FOR THRESHOLD #{l}"
-
-	t = Time.now.to_f
-	a, b = threshold pixels, l
-	puts ".. segmented image in #{Time.now.to_f - t}"
-
-	t = Time.now.to_f
-	n1 = a.flatten.compact.length
-	n2 = b.flatten.compact.length
-
-	if n1 * n2 > 0
-		g1 = gamma a
-		puts "   .. got g1"
-		g2 = gamma b
-		puts "   .. got g2"
-
-		vv = n1 * g1 + n2 * g2
-		puts ".. calculated variance #{n1}*#{g1} + #{n2}*#{g2} = #{vv} in #{Time.now.to_f - t}"
-
-		v[l] = vv
+v = Array.new(255)
+254.times do |level|
+	#t = Time.now.to_f
+	vv = mean_variance pixels, WIDTH, HEIGHT, level, 3
+	if vv.nil?
+		break if got_some
+	else
+		v[level] = vv
 		if bv.nil? or bv > vv
 			bv = vv
-			bl = l
+			bl = level
 		end
-
 		got_some = true
-	else
-		puts ".. skipped; empty segments"
-		break if got_some
 	end
 end
+td = Time.now.to_f - t0
+blab "LAG (1,2,3): done in #{'%0.3f' % td}s"
+csv.print '"mean(1,2,3)",', v.map{|x|x ? x : 0}.join(','),",#{bl},#{bv},#{td}\n"
 
-p v
-
-puts "Best: #{bl} [#{bv}]"
+csv.close
+$stdout.flush
 

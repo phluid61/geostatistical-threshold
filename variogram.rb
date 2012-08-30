@@ -31,9 +31,10 @@ def gamma pixels, width, height, lag=1
 	factor = width * height
 
 	sum1 = 0.0
-	(width-lag).times do |x|
-		height.times do |y|
-			if pixels[y][x+lag] and pixels[y][x]
+	height.times do |y|
+		row = pixels[y]
+		(width-lag).times do |x|
+			if row[x+lag] and row[x]
 				d = pixels[y][x+lag] - pixels[y][x]
 				sum1 += (d ** 2)
 			end
@@ -42,10 +43,12 @@ def gamma pixels, width, height, lag=1
 	sum1 /= factor
 
 	sum2 = 0.0
-	width.times do |x|
-		(height-lag).times do |y|
-			if pixels[y+lag][x] and pixels[y][x]
-				d = pixels[y+lag][x] - pixels[y][x]
+	(height-lag).times do |y|
+		row0 = pixels[y]
+		rowh = pixels[y+lag]
+		width.times do |x|
+			if rowh[x] and row0[x]
+				d = rowh[x] - row0[x]
 				sum1 += (d ** 2)
 			end
 		end
@@ -76,5 +79,31 @@ def variance pixels, width, height, level, lag=1
 	g2 = gamma b, width, height, lag
 
 	n1 * g1 + n2 * g2
+end
+
+#
+# Given a two-dimensional array of numeric values (e.g. an image),
+# this function returns the variance of the array as a product
+# of the variances of its two subsets when segmented at a given
+# threshold level, using the mean experimental semivariogram over
+# a given range of lag distances.
+#
+# Note: this will return +nil+ if either subset after segmentation
+# is empty.
+#
+def mean_variance pixels, width, height, level, max_lag
+	a, b = threshold pixels, width, height, level
+
+	n1 = a.flatten.compact.length
+	n2 = b.flatten.compact.length
+	return nil if n1 * n2 == 0
+
+	v = 0
+	(1..max_lag).each do |h|
+		g1 = gamma a, width, height, h
+		g2 = gamma b, width, height, h
+		v += n1 * g1 + n2 * g2
+	end
+	v / max_lag
 end
 
