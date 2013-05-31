@@ -64,7 +64,7 @@ csv.print '"mean(1,2,3)",', v.map{|x|x ? x : 0}.join(','),",#{bl},#{bv},#{td}\n"
 
 ### Create a partitioned image using the mean variance
 above,below = Variogram.threshold pixels, width, height, bl
-tga[:pixels] = above.map{|a| a.map{|p| p.nil? ? 0 : 1 } }
+tga[:pixels] = above.map{|row| row.map{|p| p.nil? ? 0 : 255 } }
 ImageIO.save_tga_file "#{TGA}-parted.tga", tga
 
 csv.close
