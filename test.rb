@@ -1,5 +1,5 @@
-require './variogram.rb'
-require './imageio.rb'
+require_relative 'variogram.rb'
+require_relative 'imageio.rb'
 
 TGA = 'images/chopper'
 
