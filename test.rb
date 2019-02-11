@@ -16,27 +16,27 @@ csv.print 'Lag (h),',255.times.to_a.join(','),",Best Level,Best Variance,Time\n"
 
 ### Calculate individual variances for each lag distance (1-3)
 (1..3).each do |lag|
-	t0 = Time.now.to_f
-	got_some = false
-	bv = nil
-	bl = nil
-	v = Array.new(255)
-	254.times do |level|
-		t = Time.now.to_f
-		vv = Variogram.variance pixels, width, height, level, lag
-		if vv.nil?
-			break if got_some
-		else
-			v[level] = vv
-			if bv.nil? or bv > vv
-				bv = vv
-				bl = level
-			end
-			got_some = true
-		end
-	end
-	td = Time.now.to_f - t0
-	csv.print "#{lag},", v.map{|x|x ? x : 0}.join(','),",#{bl},#{bv},#{td}\n"
+  t0 = Time.now.to_f
+  got_some = false
+  bv = nil
+  bl = nil
+  v = Array.new(255)
+  254.times do |level|
+    t = Time.now.to_f
+    vv = Variogram.variance pixels, width, height, level, lag
+    if vv.nil?
+      break if got_some
+    else
+      v[level] = vv
+      if bv.nil? or bv > vv
+        bv = vv
+        bl = level
+      end
+      got_some = true
+    end
+  end
+  td = Time.now.to_f - t0
+  csv.print "#{lag},", v.map{|x|x ? x : 0}.join(','),",#{bl},#{bv},#{td}\n"
 end
 
 ### Calculate the mean variance over the lag distances (1-3)
@@ -46,18 +46,18 @@ bv = nil
 bl = nil
 v = Array.new(255)
 254.times do |level|
-	#t = Time.now.to_f
-	vv = Variogram.mean_variance pixels, width, height, level, 3
-	if vv.nil?
-		break if got_some
-	else
-		v[level] = vv
-		if bv.nil? or bv > vv
-			bv = vv
-			bl = level
-		end
-		got_some = true
-	end
+  #t = Time.now.to_f
+  vv = Variogram.mean_variance pixels, width, height, level, 3
+  if vv.nil?
+    break if got_some
+  else
+    v[level] = vv
+    if bv.nil? or bv > vv
+      bv = vv
+      bl = level
+    end
+    got_some = true
+  end
 end
 td = Time.now.to_f - t0
 csv.print '"mean(1,2,3)",', v.map{|x|x ? x : 0}.join(','),",#{bl},#{bv},#{td}\n"
