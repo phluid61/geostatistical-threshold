@@ -112,6 +112,8 @@ module ImageIO
     end
 
     _rest = raw_bytes[cursor..-1]
+    _rest = '' unless _rest
+
     if raw_bytes[-18,18] == "TRUEVISION-XFILE.\0"
       footer = raw_bytes[-26,8].unpack('L<L<')
       footer_struct = {
