@@ -36,7 +36,7 @@ module Variogram
       row = pixels[y]
       (width-lag).times do |x|
         if row[x+lag] and row[x]
-          d = pixels[y][x+lag] - pixels[y][x]
+          d = row[x+lag] - row[x]
           sum1 += (d ** 2)
         end
       end
@@ -50,7 +50,7 @@ module Variogram
       width.times do |x|
         if rowh[x] and row0[x]
           d = rowh[x] - row0[x]
-          sum1 += (d ** 2)
+          sum2 += (d ** 2)
         end
       end
     end
